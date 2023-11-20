@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Convert MIDI to Text</title>
+  <script type="text/javascript" src="https://unpkg.com/tone@latest/build/Tone.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/@tonejs/ui@0.0.8/build/tonejs-ui.js"></script>
+  <script type="text/javascript" src="https://unpkg.com/@tonejs/midi"></script>
+</head>
+
+<body>
+  <style type="text/css">
+    #FileDrop {
+      position: relative;
+      width: 100%;
+      height: 100px;
+      border: 2px dashed black;
+      color: black;
+      margin: 20px auto;
+    }
+
+    #FileDrop.Hover {
+      background-color: black;
+      color: white;
+    }
+
+    #FileDrop input {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      opacity: 0;
+      left: 0px;
+      top: 0px;
+    }
+
+    #FileDrop #Text {
+      position: absolute;
+      width: 100%;
+      height: 20px;
+      line-height: 20px;
+      left: 0px;
+      top: 50%;
+      transform: translate(0, -50%);
+      text-align: center;
+    }
+
+    textarea {
+      font-family: monospace;
+      height: 300px;
+      width: 100%;
+      display: inline-block;
+      position: relative;
+      float: left;
+    }
+
+    #Results {
+      position: relative;
+      width: 100%;
+      margin: 10px auto;
+    }
+
+    #Description {
+      position: relative;
+      width: 100%;
+      text-align: center;
+      height: 40px;
+      font-size: 16px;
+      margin: 10px auto;
+      font-family: sans-serif;
+    }
+    
+    l {
+      color: #00000050;
+    }
+
+    #CopyTextButton {
+      display: none;
+    }
+
+    tone-play-toggle {
+      margin-top: 10px;
+    }
+  </style>
+  <tone-content>
+    <div id="Description">
+      <b>Built using tone.js.</b><br>
+      Import a MIDI file and convert it to text for your hyperPad FNF mods!
+    </div>
+    <div id="FileDrop">
+      <div id="Text">
+        Drop a midi file here
+      </div>
+      <input type="file" accept="audio/midi" />
+    </div>
+    <div id="Error" style="display:none">
+      <p>Uh oh. There was an error. Make sure you have imported the correct file and that you have internet connection.</p>
+    </div>
+    <div id="Results" style="display:none">
+      <label for="Track List">Choose a track:</label>
+      <select name="Track List" id="trackList">
+      </select>
+      <p>Tickspeed: <b id="Tickspeed">?</b> <l>|</l> 
+      Track Count: <b id="TrackCount">?</b> <l>|</l> 
+      BPM: <b id="BPM">?</b></p>
+      <textarea id="ResultsText" placeholder="text output..."></textarea>
+      <button onclick="copyTextFunction()" id="CopyTextButton">Copy Text</button>
+    </div>
+  </tone-content>
+
+  <script type="text/javascript">
+    if (
+      !(
+        window.File &&
+        window.FileReader &&
+        window.FileList &&
+        window.Blob
+      )
+    ) {
+      document.querySelector("#FileDrop #Text").textContent =
+        "Reading files not supported by this browser";
+    } else {
+      const fileDrop = document.querySelector("#FileDrop");
+
+      fileDrop.addEventListener("dragenter", () =>
+        fileDrop.classList.add("Hover")
+      );
+
+      fileDrop.addEventListener("dragleave", () =>
+        fileDrop.classList.remove("Hover")
+      );
+
+      fileDrop.addEventListener("drop", () =>
+        fileDrop.classList.remove("Hover")
+      );
+
+      document
+        .querySelector("#FileDrop input")
+        .addEventListener("change", (e) => {
+          //get the files
+          const files = e.target.files;
+          if (files.length > 0) {
+            const file = files[0];
+            document.querySelector(
+              "#FileDrop #Text"
+            ).textContent = file.name;
+            parseFile(file);
+          }
+        });
+    }
+    var midi;
+    var tickspeed;
+    function parseFile(file) {
+      // read the file
+      const reader = new FileReader();
+      var error = false;
+      reader.onload = function(e) {
+        try {
+          
+          // load the midi data
+          midi = new Midi(e.target.result);
+          document.getElementById('ResultsText').value = "Select a channel to view text.";
+          console.log(midi);
+          
+          // populate some text
+          tickspeed = midi.header.ppq || 128;
+          document.getElementById('Tickspeed').innerHTML = tickspeed;
+          document.getElementById('TrackCount').innerHTML = midi.tracks.length;
+          document.getElementById('BPM').innerHTML = Math.round(midi.header.tempos[0].bpm * 100) / 100.0;
+          
+          // remove tracks from the selection list
+          let selectElement = document.getElementById('trackList');
+          var i, L = selectElement.options.length - 1;
+          for (i = L; i >= 0; i--) {
+            selectElement.remove(i);
+          }
+          
+          // add new tracks to the selection list
+          let trackCount = midi.tracks.length;
+          let defaultOption = document.createElement("option");
+          defaultOption.text = "Select Channel";
+          defaultOption.selected = true;
+          defaultOption.disabled = true;
+          selectElement.add(defaultOption)
+          for (i = 0; i < trackCount; i++) {
+            let track = midi.tracks[i];
+            let option = document.createElement("option");
+            option.text = "Channel #" + (track.channel + 1) + " (" + track.notes.length + " Notes)";
+            selectElement.add(option)
+          }
+        
+        } catch(e) {
+          // uh oh - an error
+          console.error(e);
+          error = true;
+        }
+        
+        document.getElementById("CopyTextButton").style.display = "none";
+        if (error) {
+          document.getElementById('Error').style.display = "block";
+          document.getElementById('Results').style.display = "none";
+        } else {
+          document.getElementById('Results').style.display = "block";
+          document.getElementById('Error').style.display = "none";
+        }
+      }
+      reader.readAsArrayBuffer(file);
+    }
+    
+    let selectElement = document.getElementById('trackList');
+    selectElement.addEventListener("change", (event) => {
+      // get the selected track
+      let selectedIndex = selectElement.selectedIndex - 1;
+      let track = midi.tracks[selectedIndex];
+      
+      // get all the notes and create events
+      let events = [];
+      track.notes.forEach(function(note) {
+        let notePressed = {
+          "tick": Math.round(tickspeed * note.time),
+          "state": "On",
+          "channel": track.channel + 1,
+          "note": note.midi,
+          "velocity": Math.round(note.velocity * 100)
+        }
+        let noteReleased = {
+          "tick": Math.round(tickspeed * (note.time + note.duration)),
+          "state": "Off",
+          "channel": track.channel + 1,
+          "note": note.midi,
+          "velocity": 0
+        }
+        events.push(notePressed, noteReleased);
+      });
+      
+      // sort all the events in order and generate text
+      events.sort((a, b) => {
+        return a.tick - b.tick;
+      });
+      let text = "";
+      events.forEach(function(event) {
+        let line = [event.tick, 
+          event.state, 
+          "ch=" + event.channel, 
+          "n=" + event.channel, 
+          "v=" + event.velocity].join(" ");
+        text += line + "\n";
+      });
+      document.getElementById('ResultsText').value = text;
+      document.getElementById("CopyTextButton").style.display = "block";
+      
+    });
+    
+    function copyTextFunction() {
+      var copyText = document.getElementById("ResultsText");
+      copyText.select(); 
+      copyText.setSelectionRange(0, 999999); // For mobile devices
+      navigator.clipboard.writeText(copyText.value);
+    }
+
+  </script>
+</body>
+
+</html>

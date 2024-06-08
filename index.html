@@ -150,6 +150,7 @@
     }
     var midi;
     var tickspeed = 128;
+    var bpm;
     function parseFile(file) {
       // read the file
       const reader = new FileReader();
@@ -166,7 +167,8 @@
           tickspeed = 128
           document.getElementById('Tickspeed').innerHTML = tickspeed;
           document.getElementById('TrackCount').innerHTML = midi.tracks.length;
-          document.getElementById('BPM').innerHTML = Math.round(midi.header.tempos[0].bpm * 100) / 100.0;
+          bpm = Math.round(midi.header.tempos[0].bpm * 100) / 100.0;
+          document.getElementById('BPM').innerHTML = bpm;
           
           // remove tracks from the selection list
           let selectElement = document.getElementById('trackList');
@@ -217,7 +219,7 @@
       let events = [];
       track.notes.forEach(function(note) {
         let notePressed = {
-          "tick": Math.round(tickspeed * note.time),
+          "tick": Math.round(tickspeed * note.time) * (bpm / 60),
           "state": "On",
           "channel": track.channel + 1,
           "note": note.midi,

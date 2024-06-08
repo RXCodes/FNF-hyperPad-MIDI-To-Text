@@ -226,7 +226,7 @@
           "velocity": Math.round(note.velocity * 100)
         }
         let noteReleased = {
-          "tick": Math.round(tickspeed * (note.time + note.duration)),
+          "tick": Math.round(tickspeed * (bpm / 60) * (note.time + note.duration)),
           "state": "Off",
           "channel": track.channel + 1,
           "note": note.midi,

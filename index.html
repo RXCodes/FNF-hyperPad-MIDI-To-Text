@@ -149,7 +149,7 @@
         });
     }
     var midi;
-    var tickspeed;
+    var tickspeed = 128;
     function parseFile(file) {
       // read the file
       const reader = new FileReader();
@@ -163,7 +163,7 @@
           console.log(midi);
           
           // populate some text
-          tickspeed = midi.header.ppq || 128;
+          tickspeed = 128
           document.getElementById('Tickspeed').innerHTML = tickspeed;
           document.getElementById('TrackCount').innerHTML = midi.tracks.length;
           document.getElementById('BPM').innerHTML = Math.round(midi.header.tempos[0].bpm * 100) / 100.0;

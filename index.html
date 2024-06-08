@@ -219,7 +219,7 @@
       let events = [];
       track.notes.forEach(function(note) {
         let notePressed = {
-          "tick": Math.round(tickspeed * note.time) * (bpm / 60),
+          "tick": Math.round(tickspeed * note.time * (bpm / 60)),
           "state": "On",
           "channel": track.channel + 1,
           "note": note.midi,
